@@ -1,0 +1,7 @@
+**/__pycache__
+**/_out_*
+**/_tmp_*
+**/dist
+**/obj
+**/build
+**/*.deb
