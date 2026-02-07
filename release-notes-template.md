@@ -1,5 +1,6 @@
+Git Hash: <git_hash>
 # Installing
-
+<!-- markdown-link-check-disable-next-line -->
 1. Download from: **[<full_pkg_name>.deb](<package_download_url>)**
 2. Install with: **`sudo dpkg -i <full_pkg_name>.deb`**
 

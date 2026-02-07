@@ -438,7 +438,9 @@ class PathReviewEntry:
 class Utils:
 
     @staticmethod
-    def log_msg(msgMayBeMultiline: str, prefixOnFirstLine: str = "", icon: str = "ℹ️  "):
+    def log_msg(
+        msgMayBeMultiline: str, prefixOnFirstLine: str = "", icon: str = "ℹ️  "
+    ):
         Utils._log_lines(msgMayBeMultiline, prefixOnFirstLine, icon)
 
     @staticmethod

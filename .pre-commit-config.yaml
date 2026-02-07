@@ -1,18 +1,15 @@
 ci:
   autofix_prs: false
   autoupdate_schedule: quarterly
+  skip: [markdown-link-check]
 fail_fast: false
-exclude: "^vendor_shims/(satlab_srs4_client|cubesense_vendor|cspice)/|^gnc/.*/cache/.*|gnc_toybox/.SimulinkProject/.*|gnc_core/.SimulinkProject/.*|gnc_sil/.SimulinkProject/.*|gnc_one_sim/.SimulinkProject/.*|gnc_one_sim/gnc_one_sim_cg/.*|gnc_core/gnc_core_cg/.*|gnc_toybox/gnc_toybox_cg/.*"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
         args: ['--maxkb=500']
         exclude: \.slx$
-      - id: check-added-large-files
-        args: ['--maxkb=10000']
-        files: \.slx$
       - id: check-ast
       - id: check-case-conflict
       - id: check-docstring-first
@@ -29,31 +26,9 @@ repos:
         args: [--fix=lf]
       - id: name-tests-test
       - id: trailing-whitespace
-  # C || C++ || Cuda
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 75ca4ad908dc4a99f57921f29b7e6c1521e10b26 # frozen: v21.1.8
-    hooks:
-      - id: clang-format
-        args: [--style=file]
-        types_or: [c++, c, cuda]
-        require_serial: true
-        exclude: "gnc_struct_generator/test/expected/.*"
-  # CMake
-  - repo: https://github.com/cheshirekow/cmake-format-precommit
-    rev: e2c2116d86a80e72e7146a06e68b7c228afc6319 # frozen: v0.6.13
-    hooks:
-      - id: cmake-format
-        additional_dependencies: [pyyaml>=5.1]
-      - id: cmake-lint
-        additional_dependencies: [pyyaml>=5.1]
-  # GitHub Actions
-  - repo: https://github.com/rhysd/actionlint
-    rev: 0933c147c9d6587653d45fdcb4c497c57a65f9af # frozen: v1.7.10
-    hooks:
-      - id: actionlint
-        args:
-          - '--config-file'
-          - .github/actionlint.yaml # Path to your custom config file
+      - id: check-json
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
   # JSON
   - repo: https://gitlab.com/bmares/check-json5
     rev: bd4737432a2175617a9eeaa510ab369cbc1cbd3d # frozen: v1.0.1
@@ -61,21 +36,27 @@ repos:
       - id: check-json5
   # Python
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 831207fd435b47aeffdf6af853097e64322b4d44 # frozen: 25.12.0
+    rev: 26.1.0
     hooks:
       - id: black
   - repo: https://github.com/asottile/reorder-python-imports
-    rev: 7885866bd38c852b5e042c4aeef0285d715ffeee # frozen: v3.16.0
+    rev: v3.16.0
     hooks:
       - id: reorder-python-imports
   # Shell
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: 745eface02aef23e168a8afb6b5737818efbea95 # frozen: v0.11.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
-        args: [-x]
+        args: [-x, -P, SCRIPTDIR]
   # YAML
   - repo: https://github.com/google/yamlfmt
     rev: 884e367e8fae92b238653fd950a54d235d418e4e # frozen: v0.20.0
     hooks:
       - id: yamlfmt
+  # Markdown
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: v3.14.2
+    hooks:
+      - id: markdown-link-check
+        args: ["-q"]

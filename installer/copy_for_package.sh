@@ -62,17 +62,19 @@ done
 # All installation to /opt is done
 #
 # Now review the files that were copied
-#
 
-readarray -t lines < <(tree "${dest_dir}" --noreport | tail -n +2)  # Indent the output for better readability
+if command -v "tree" &>/dev/null; then
 
-if [[ "${#lines[@]}" -eq 0 ]] ; then
-    echo "⚠️ WARNING: No files were copied to the destination directory: ${dest_dir}"
-    echo "            Please check that the source directory (${dir_files}) contains files to copy."
+    readarray -t lines < <(tree "${dest_dir}" --noreport | tail -n +2)  # Indent the output for better readability
+
+    if [[ "${#lines[@]}" -eq 0 ]] ; then
+        echo "⚠️ WARNING: No files were copied to the destination directory: ${dest_dir}"
+        echo "            Please check that the source directory (${dir_files}) contains files to copy."
+    fi
+    for line in "${lines[@]}"; do
+        echo " $line"
+    done
 fi
-for line in "${lines[@]}"; do
-    echo " $line"
-done
 
 ######################################################
 #

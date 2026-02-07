@@ -1,28 +1,60 @@
 #!/bin/bash -eu
-# <package_name>_<version>-<revision>_<architecture>
-
 
 pkg_name="para-tools"
 pkg_version="0.0.1"
-pkg_revision="1"
+pkg_revision="2"
 pkg_arch="all"
 
 description="A collection of simple scripts for assisting with code development"
+pkg_maintainer="Mac Harwood <MacHarwood@gmail.com>"
 
 out_dist_dir="_out_dist"
 
-github_repo_user="Mac-H"
 ###################################################################
 #
-# Release locations
+# Combined values
 #
+
 tag="v${pkg_version}-r${pkg_revision}"
 full_pkg_name="${pkg_name}_${pkg_version}-${pkg_revision}_${pkg_arch}"
 
-git_url_prefix="https://github.com/${github_repo_user}/${pkg_name}"
-git_releases_all_url="${git_url_prefix}/releases"
-git_release_info_url="${git_url_prefix}/releases/${tag}"
-package_download_url="${git_url_prefix}/releases/download/${tag}/${full_pkg_name}.deb"
+###################################################################
+#
+# Git & Release locations
+#
+git_hash="$(git describe --always --dirty)"
+git_remote_name="$(git remote -v | head -n 1 | awk '{print $2}')" #< eg: git@github.com:Mac-H/para-tools.git
+git_remote_url="${git_remote_name/git@github.com:/https:\/\/github.com\/}"
+
+
+if [[ "$git_remote_url" == "https://github.com/"* ]] ; then
+    git_url_prefix="${git_remote_url%.git}/"
+    git_releases_all_url="${git_url_prefix%/}/releases"
+    git_release_info_url="${git_url_prefix%/}/releases/${tag}"
+    package_download_url="${git_url_prefix%/}/releases/download/${tag}/${full_pkg_name}.deb"
+elif [[ "$git_remote_url" == "https://bitbucket.org/"* ]] ; then
+    echo "⚠️ Warning: Release locations in bitbucket are untested  - Please verify the URLs manually"
+    git_url_prefix="${git_remote_url%.git}/"
+    git_releases_all_url="${git_url_prefix%/}/releases"
+    git_release_info_url="${git_url_prefix%/}/releases/${tag}"
+    package_download_url="${git_url_prefix%/}/releases/download/${tag}/${full_pkg_name}.deb"
+elif [[ "$git_remote_url" == "https://gitlab.com/"* ]] ; then
+    echo "⚠️ Warning: Release locations in gitlab are untested - Please verify the URLs manually"
+    git_url_prefix="${git_remote_url%.git}/"
+    git_releases_all_url="${git_url_prefix%/}/releases"
+    git_release_info_url="${git_url_prefix%/}/releases/${tag}"
+    package_download_url="${git_url_prefix%/}/releases/download/${tag}/${full_pkg_name}.deb"
+else
+    echo "⚠️ Warning: Release locations based on $git_remote_url as not supported.  Please update the script to handle this case."
+    git_url_prefix="${git_remote_url%.git}/"
+    git_releases_all_url="${git_url_prefix%/}/releases"
+    git_release_info_url="${git_url_prefix%/}/releases/${tag}"
+    package_download_url="${git_url_prefix%/}/releases/download/${tag}/${full_pkg_name}.deb"
+fi
+
+if [[ "$git_hash" == *-dirty ]]; then
+    echo "⚠️ Warning: Git repository has uncommitted changes.  Consider committing or stashing changes before creating a release."
+fi
 
 ###################################################################
 #
@@ -52,6 +84,7 @@ readarray -t readme_lines < "${this_dir%/}/readme.md"
             echo "## Version Information ##"
             echo " * Version: ${pkg_version}"
             echo " * Revision: ${pkg_revision}"
+            echo " * Git Hash: ${git_hash}"
             break
         fi
 
@@ -90,7 +123,7 @@ done
     echo "Package: ${pkg_name}"
     echo "Version: ${pkg_version}-${pkg_revision}"
     echo "Architecture: ${pkg_arch}"
-    echo "Maintainer: Mac Harwood <MacHarwood@gmail.com>"
+    echo "Maintainer: ${pkg_maintainer}"
     echo "Description: ${description}"
     # Longer description should be prefixed with a space
 } > "$dest_dir/DEBIAN/control"
@@ -98,7 +131,7 @@ done
 {
     printf "echo ''\n"
     printf "echo 'Release information:'\n"
-    printf "echo ' • This release can be found at      : %s'\n" "${git_release_info_url}"
+    printf "echo ' • This release can be found at      : %s  (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
     printf "echo ' • The latest release can be found at: %s'\n" "${git_releases_all_url}/latest"
     printf "echo ''\n"
     printf "echo 'To remove: sudo dpkg -r %s'\n" "$pkg_name"
@@ -107,7 +140,7 @@ done
 {
     printf "echo ''\n"
     printf "echo 'To reinstall:'\n"
-    printf "echo ' • This exact version: %s'\n" "${git_release_info_url}"
+    printf "echo ' • This exact version: %s (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
     printf "echo ' • The latest version: %s'\n" "${git_releases_all_url}/latest"
 } >> "$dest_dir/DEBIAN/prerm"
 
@@ -121,7 +154,8 @@ done
         | sed "s|<version>|${pkg_version}|g" \
         | sed "s|<full_pkg_name>|${full_pkg_name}|g" \
         | sed "s|<tag>|${tag}|g" \
-        | sed "s|<package_download_url>|${package_download_url}|g"
+        | sed "s|<package_download_url>|${package_download_url}|g" \
+        | sed "s|<git_hash>|${git_hash}|g"
 
     echo ""
 
