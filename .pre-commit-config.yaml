@@ -1,0 +1,62 @@
+ci:
+  autofix_prs: false
+  autoupdate_schedule: quarterly
+  skip: [markdown-link-check]
+fail_fast: false
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+        exclude: \.slx$
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: name-tests-test
+      - id: trailing-whitespace
+      - id: check-json
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
+  # JSON
+  - repo: https://gitlab.com/bmares/check-json5
+    rev: bd4737432a2175617a9eeaa510ab369cbc1cbd3d # frozen: v1.0.1
+    hooks:
+      - id: check-json5
+  # Python
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.1.0
+    hooks:
+      - id: black
+  - repo: https://github.com/asottile/reorder-python-imports
+    rev: v3.16.0
+    hooks:
+      - id: reorder-python-imports
+  # Shell
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [-x, -P, SCRIPTDIR]
+  # YAML
+  - repo: https://github.com/google/yamlfmt
+    rev: 884e367e8fae92b238653fd950a54d235d418e4e # frozen: v0.20.0
+    hooks:
+      - id: yamlfmt
+  # Markdown
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: v3.14.2
+    hooks:
+      - id: markdown-link-check
+        args: ["-q"]
