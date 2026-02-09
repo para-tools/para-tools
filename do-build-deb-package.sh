@@ -10,13 +10,16 @@ cd "$this_dir"
 
 pkg_name="para-tools"
 pkg_version="0.0.1"
-pkg_revision="2"
+pkg_revision="3"
 pkg_arch="all"
 
 description="A collection of simple scripts for assisting with code development"
 pkg_maintainer="Mac Harwood <MacHarwood@gmail.com>"
 
 out_dist_dir="_out_dist"
+
+function main()
+{
 
 additional_actions=""
 if [[ "${1:-}" == "--and-install" ]] ; then
@@ -41,11 +44,13 @@ git_remote_url="${git_remote_name/git@github.com:/https:\/\/github.com\/}"
 
 git_url_prefix="${git_remote_url%.git}/"
 
+direct_info_page=''
+direct_info_url=''
 if [[ "$git_remote_url" == "https://github.com/para-tools/para-tools.git" ]] ; then
-    direct_info_url="https://para-tools.github.io"
-else
-    direct_info_url=''
+    direct_info_page="para-tools.github.io"
 fi
+
+[[ -n "$direct_info_page" ]] && direct_info_url="https://${direct_info_page}"
 
 if [[ "$git_remote_url" == "https://github.com/"* ]] ; then
     true #< This is the default case we expect
@@ -92,21 +97,38 @@ chmod +x "$dest_dir/DEBIAN/prerm"
 
 cp "${this_dir%/}/LICENSE" "$dest_dir/$opt_dir/"
 
-readarray -t readme_lines < "${this_dir%/}/readme.md"
+##########################################################
+#
+# Generate summary documentation for this release (eg: README.md)
+#  * readme_allLines: All lines from the readme
+#  * readme_firstSectionMainOnly: Lines from the first section of the readme - Excluding any subsections (eg: ## Subsection)
+#  * readme_firstSectionSubsections: Lines from the first section of the readme - Only the subsections (eg: ## Subsection) and their content,
+#
+readarray -t readme_allLines < "${this_dir%/}/readme.md"
+readme_firstSectionMainOnly=()
+readme_firstSectionSubsections=()
 {
-    #
-    # Readme top section
-    # The exception is the 'Installing the latest version' section,
-    # which we want to include as it contains useful information about getting the latest release.
-    #
     first_header_is_found='no'
-    for line in "${readme_lines[@]}"; do
+    am_in_subsections='no'
+    for line in "${readme_allLines[@]}"; do
+        [[ "$line" == "## "* ]] && am_in_subsections='yes'
         if [[ "$line" == "# "* ]] ; then
             [[ "$first_header_is_found" == "yes" ]] && break
             first_header_is_found='yes'
         fi
-        echo "$line"
+        if [[ "$am_in_subsections" == "no" ]] ; then
+            readme_firstSectionMainOnly+=("$line")
+        else
+            readme_firstSectionSubsections+=("$line")
+        fi
     done
+}
+
+#####################################################################
+#
+#
+{
+    print_lines "${readme_firstSectionMainOnly[@]}"
 
     echo "## Version Information ##"
     echo " * Version: ${pkg_version}"
@@ -140,7 +162,9 @@ for tool_dir in "${this_dir%}/parts"/*/ ; do
         fi
     fi
 done
-
+#############################################################
+#
+# Generate DEBIAN entries
 {
     echo "Package: ${pkg_name}"
     echo "Version: ${pkg_version}-${pkg_revision}"
@@ -180,26 +204,35 @@ done
 # Generate the release notes for this package
 #
 {
-    cat "${this_dir%/}/release-notes-template.md"  \
-        | sed "s|<version>|${pkg_version}|g" \
-        | sed "s|<full_pkg_name>|${full_pkg_name}|g" \
-        | sed "s|<tag>|${tag}|g" \
-        | sed "s|<package_download_url>|${package_download_url}|g" \
-        | sed "s|<git_hash>|${git_hash}|g"
+    {
+        echo "## Installing  ##"
+        do_var_replacements < "${this_dir%/}/doc-templates/snippet-installing.md"
+        echo "----"
+        echo "**This is built from GitHash \`${git_hash}\`**"
+        echo ""
 
-    echo ""
+        print_lines "${readme_firstSectionMainOnly[@]}"
+        print_lines "${readme_firstSectionSubsections[@]}"
 
-    #
-    # Readme headlines (Basically everything before the first subtitle)
-    #
-    for line in "${readme_lines[@]}"; do
-        [[ "$line" == "##"* ]] && break
+    } > "${out_dist_dir%/}/${tag}_release_notes.md"
+    echo "✅  Created Release notes : ${out_dist_dir%/}/${tag}_release_notes.md   (Release Tag: ${tag})"
+}
 
-        echo "$line"
-    done
-
-} > "${out_dist_dir%/}/${tag}_release_notes.md"
-echo "✅  Created Release notes : ${out_dist_dir%/}/${tag}_release_notes.md   (Release Tag: ${tag})"
+if [[ -n "$direct_info_page" ]] ; then
+    echo "✅  Update source for $direct_info_url"
+    {
+        print_lines "${readme_firstSectionMainOnly[@]}"
+        echo ""
+        echo "## Installing ##"
+        cat "${this_dir%/}/doc-templates/snippet-installing.md"
+        echo ""
+        print_lines "${readme_firstSectionSubsections[@]}"
+        echo ""
+        echo "# More information #"
+        echo " * Source code is available at **[<git_url_prefix_url-sans_https>(<git_url_prefix_url>)**"
+        echo " * Release history is available at **[<git_releases_all_url-sans_https>](<git_releases_all_url>)**"
+    } | do_var_replacements > "${out_dist_dir%/}/${direct_info_page%/}.README.md"
+fi
 
 ##############################################
 # Build Package
@@ -222,13 +255,75 @@ echo " • Install with              : sudo dpkg -i ${dest_dir}.deb"
 echo " • Uninstall with            : sudo dpkg -r ${pkg_name}"
 echo " • Rebuild with              : $0"
 echo ""
-echo "To publish this release:"
-echo "   git tag            ${tag} && \\"
-echo "   git push origin    ${tag} && \\"
-echo "   gh  release create ${tag} ${dest_dir}.deb --title \"Release ${tag}\" -F \"${out_dist_dir%/}/${tag}_release_notes.md\""
+echo "To publish this release:   (Git hash: ${git_hash/-dirty/⚠️-dirty})"
 
-if [[ "[install]" == *"$additional_actions"* ]] ; then
+comment='' ;
+if [[ "$git_hash" == *-dirty ]] ; then
+    comment="# "
+    echo "     ⚠️  Git repository has uncommitted changes.  Do not publish this release until it has been pushed to the origin"
+fi
+echo "   ${comment}git tag            ${tag} && \\"
+echo "   ${comment}git push origin    ${tag} && \\"
+echo "   ${comment}gh  release create ${tag} ${dest_dir}.deb --title \"Release ${tag}\" -F \"${out_dist_dir%/}/${tag}_release_notes.md\""
+echo "   ${comment}# Push ${out_dist_dir%/}/${direct_info_page%/}.README.md to the website: ${direct_info_page%/}/README.md"
+
+if [[ "$additional_actions" == *"[install]"* ]] ; then
     echo ""
     echo "Installing package..."
     sudo dpkg -i "${dest_dir}.deb"
 fi
+}
+
+function _inner_do_var_replacement_lines() {
+    local needle="$1"
+    local replacement="$2"
+
+    shift 2 || true
+    print_lines "$@" | sed "s|${needle}|${replacement}|g"
+}
+
+
+
+function _inner_do_var_replacement_file() {
+    local needle="$1"
+    local replacement="$2"
+
+    local fname="$3"
+
+    local _lines
+    readarray -t _lines < "$fname"
+
+    _inner_do_var_replacement_lines "$needle" "$replacement" "${_lines[@]}" > "$fname"
+}
+
+function do_var_replacements(){
+    declare -A replacements=(
+        ["version"]="${pkg_version}"
+        ["full_pkg_name"]="${full_pkg_name}"
+        ["tag"]="${tag}"
+        ["git_hash"]="${git_hash}"
+        ["package_download_url"]="${package_download_url}"
+        ["git_url_prefix_url"]="${git_url_prefix}"
+        ["git_release_info_url"]="${git_release_info_url}"
+        ["git_releases_all_url"]="${git_releases_all_url}"
+    )
+
+    local _tmpfile ; _tmpfile="$(mktemp)"
+    cat > "$_tmpfile"
+    for name in "${!replacements[@]}"; do
+        _inner_do_var_replacement_file "<${name}>" "${replacements[$name]}" "$_tmpfile"
+        [[ "$name" == *_url ]] && _inner_do_var_replacement_file "<${name}-sans_https>" "${replacements[$name]#https://}" "$_tmpfile"
+    done
+    cat "$_tmpfile"
+    rm -f "$_tmpfile"
+}
+
+function print_lines(){
+    while [[ "$#" -gt 0 ]]; do
+        echo "$1"
+        shift 1 || true
+    done
+}
+
+
+main "$@"

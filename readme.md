@@ -1,5 +1,4 @@
 # para-tools
-
 A collection of simple scripts for assisting with development on Linux platforms
 
 These include:
@@ -9,9 +8,6 @@ These include:
 | para-dir-hash       | Generates text hashes of directories that can be compared           |
 | para-local-install  | A handy shortcut for installing a python script as a system command |
 
-## Installing the latest version ##
-The latest version is at **[releases/latest](https://github.com/para-tools/para-tools/releases/latest)**
-
 ## What does 'para' mean ? ##
 
 * From Greek: "beside," "alongside," or "beyond" (eg: parallel)
@@ -19,6 +15,9 @@ The latest version is at **[releases/latest](https://github.com/para-tools/para-
 * From Finnish Mythology: A house spirit who collects helpful titbits for the owner
 
 It is the 'Finnish Mythology' usage that this archive is named after.
+
+# Installing the latest version #
+The latest version is at **[releases/latest](https://github.com/para-tools/para-tools/releases/latest)**
 
 # Development Notes #
 
@@ -32,12 +31,12 @@ You can review at any time with `pre-commit run -a`
 
 ## Building Package & Installing ##
 
-To create the debian package:
+To build the debian package:
 ```shell
-./do-create-deb-package.sh
+./do-build-deb-package.sh
 ```
 
-The 'do-create-deb-package.sh' script will also give instructions on how to install the package afterwards.
+The 'do-build-deb-package.sh' script will also give instructions on how to install the package afterwards.
 
 ## Future Roadmap ##
 
