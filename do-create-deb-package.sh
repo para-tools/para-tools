@@ -18,6 +18,11 @@ pkg_maintainer="Mac Harwood <MacHarwood@gmail.com>"
 
 out_dist_dir="_out_dist"
 
+additional_actions=""
+if [[ "${1:-}" == "--and-install" ]] ; then
+    additional_actions+="[install]"
+    shift 1 || true
+fi
 ###################################################################
 #
 # Combined values
@@ -221,3 +226,9 @@ echo "To publish this release:"
 echo "   git tag            ${tag} && \\"
 echo "   git push origin    ${tag} && \\"
 echo "   gh  release create ${tag} ${dest_dir}.deb --title \"Release ${tag}\" -F \"${out_dist_dir%/}/${tag}_release_notes.md\""
+
+if [[ "[install]" == *"$additional_actions"* ]] ; then
+    echo ""
+    echo "Installing package..."
+    sudo dpkg -i "${dest_dir}.deb"
+fi
