@@ -36,6 +36,12 @@ git_remote_url="${git_remote_name/git@github.com:/https:\/\/github.com\/}"
 
 git_url_prefix="${git_remote_url%.git}/"
 
+if [[ "$git_remote_url" == "https://github.com/para-tools/para-tools.git" ]] ; then
+    direct_info_url="https://para-tools.github.io"
+else
+    direct_info_url=''
+fi
+
 if [[ "$git_remote_url" == "https://github.com/"* ]] ; then
     true #< This is the default case we expect
 elif [[ "$git_remote_url" == "https://bitbucket.org/"* ]] ; then
@@ -72,8 +78,8 @@ opt_dir="/opt/${pkg_name}"
 rm -rf "${dest_dir:-MISSING}/$opt_dir"
 mkdir -p "$dest_dir/$opt_dir"
 mkdir -p "$dest_dir/DEBIAN"
-printf "#!/bin/bash -eu\n\n echo \n echo 'Installing the following commands:'\n" > "$dest_dir/DEBIAN/postinst"
-printf "#!/bin/bash -eu\n\n echo \n echo 'Removing the following commands:'\n" > "$dest_dir/DEBIAN/prerm"
+printf "#!/bin/bash -eu\n\n echo \n echo 'Installing the following commands:   (Created with GitHash %s)'\n" "$git_hash" > "$dest_dir/DEBIAN/postinst"
+printf "#!/bin/bash -eu\n\n echo \n echo 'Removing the following commands:   (Created with GitHash %s)'\n" "$git_hash" > "$dest_dir/DEBIAN/prerm"
 
 
 chmod +x "$dest_dir/DEBIAN/postinst"
@@ -141,18 +147,26 @@ done
 
 {
     printf "echo ''\n"
-    printf "echo 'Release information:'\n"
-    printf "echo ' • This release can be found at      : %s  (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
-    printf "echo ' • The latest release can be found at: %s'\n" "${git_releases_all_url}/latest"
-    printf "echo ''\n"
+    if [[ -n "$direct_info_url" ]] ; then
+        printf "echo 'For more information (including the latest version): %s'\n" "$direct_info_url"
+    else
+        printf "echo 'Release information:'\n"
+        printf "echo ' • This release can be found at      : %s  (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
+        printf "echo ' • The latest release can be found at: %s'\n" "${git_releases_all_url}/latest"
+        printf "echo ''\n"
+    fi
     printf "echo 'To remove: sudo dpkg -r %s'\n" "$pkg_name"
 } >> "$dest_dir/DEBIAN/postinst"
 
 {
     printf "echo ''\n"
-    printf "echo 'To reinstall:'\n"
-    printf "echo ' • This exact version: %s (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
-    printf "echo ' • The latest version: %s'\n" "${git_releases_all_url}/latest"
+    if [[ -n "$direct_info_url" ]] ; then
+        printf "echo 'To reinstall:  %s'\n" "$direct_info_url/#installing"
+    else
+        printf "echo 'To reinstall:'\n"
+        printf "echo ' • This exact version: %s (Git Hash: %s)'\n" "${git_release_info_url}" "${git_hash}"
+        printf "echo ' • The latest version: %s'\n" "${git_releases_all_url}/latest"
+    fi
 } >> "$dest_dir/DEBIAN/prerm"
 
 
