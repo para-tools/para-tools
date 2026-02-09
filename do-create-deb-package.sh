@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 this_dir="$(realpath -m "$(dirname "$(readlink -f "$0")")")"
+#orig_dir="$(pwd)"   #< Uncomment if we need to access files relative to the user's pwd
+cd "$this_dir"
 
 ###################################################################
 #
@@ -8,7 +10,7 @@ this_dir="$(realpath -m "$(dirname "$(readlink -f "$0")")")"
 
 pkg_name="para-tools"
 pkg_version="0.0.1"
-pkg_revision="1"
+pkg_revision="2"
 pkg_arch="all"
 
 description="A collection of simple scripts for assisting with code development"
