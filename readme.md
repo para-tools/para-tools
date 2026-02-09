@@ -10,7 +10,7 @@ These include:
 | para-local-install  | A handy shortcut for installing a python script as a system command |
 
 ## Installing the latest version ##
-The latest version is at **[releases/latest](https://github.com/Mac-H/para-tools/releases/latest)**
+The latest version is at **[releases/latest](https://github.com/para-tools/para-tools/releases/latest)**
 
 ## What does 'para' mean ? ##
 
