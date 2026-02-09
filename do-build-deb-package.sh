@@ -1,6 +1,11 @@
 #!/bin/bash -eu
 this_dir="$(realpath -m "$(dirname "$(readlink -f "$0")")")"
-#orig_dir="$(pwd)"   #< Uncomment if we need to access files relative to the user's pwd
+orig_dir="$(pwd)"   #< Uncomment if we need to access files relative to the user's pwd
+
+
+parent_dir="$(realpath -m "$this_dir/..")"
+parent_dir_rel="$(realpath -m --relative-to="$orig_dir" "$parent_dir")"
+
 cd "$this_dir"
 
 ###################################################################
@@ -18,6 +23,8 @@ pkg_maintainer="Mac Harwood <MacHarwood@gmail.com>"
 
 out_dist_dir="_out_dist"
 
+
+
 function main()
 {
 
@@ -34,12 +41,14 @@ fi
 tag="v${pkg_version}-r${pkg_revision}"
 full_pkg_name="${pkg_name}_${pkg_version}-${pkg_revision}_${pkg_arch}"
 
+out_dist_dir_rel="$(realpath -m --relative-to="$orig_dir" "$out_dist_dir")"
+
 ###################################################################
 #
 # Git & Release locations
 #
-git_hash="$(git describe --always --dirty)"
-git_remote_name="$(git remote -v | head -n 1 | awk '{print $2}')" #< eg: git@github.com:Mac-H/para-tools.git
+git_hash="$(git -C "$this_dir" describe --always --dirty)"
+git_remote_name="$(git -C "$this_dir" remote -v | head -n 1 | awk '{print $2}')" #< eg: git@github.com:Mac-H/para-tools.git
 git_remote_url="${git_remote_name/git@github.com:/https:\/\/github.com\/}"
 
 git_url_prefix="${git_remote_url%.git}/"
@@ -262,10 +271,21 @@ if [[ "$git_hash" == *-dirty ]] ; then
     comment="# "
     echo "     ⚠️  Git repository has uncommitted changes.  Do not publish this release until it has been pushed to the origin"
 fi
-echo "   ${comment}git tag            ${tag} && \\"
-echo "   ${comment}git push origin    ${tag} && \\"
-echo "   ${comment}gh  release create ${tag} ${dest_dir}.deb --title \"Release ${tag}\" -F \"${out_dist_dir%/}/${tag}_release_notes.md\""
-echo "   ${comment}# Push ${out_dist_dir%/}/${direct_info_page%/}.README.md to the website: ${direct_info_page%/}/README.md"
+{
+    echo "   ${comment}git tag            ${tag} && \\"
+    echo "   ${comment}git push origin    ${tag} && \\"
+    echo "   ${comment}gh  release create ${tag} ${dest_dir}.deb --title \"Release ${tag}\" -F \"${out_dist_dir_rel%/}/${tag}_release_notes.md\" && \\"
+    if [[ -f "${parent_dir%/}/para-tools.github.io/README.md" ]] ; then
+        io_page_dir="${parent_dir_rel%/}/para-tools.github.io"
+
+        echo "   ${comment}cp \"${out_dist_dir_rel%/}/${direct_info_page%/}.README.md\" \"${io_page_dir%/}/README.md\"  && \\"
+        echo "   ${comment}git -C \"${io_page_dir%/}\" add README.md && \\"
+        echo "   ${comment}git -C \"${io_page_dir%/}\" commit -m \"Update README for Release ${tag} & GitHash ${git_hash}\" && \\"
+        echo "   ${comment}git -C \"${io_page_dir%/}\" push"
+    else
+        echo "   ## Push ${out_dist_dir_rel%/}/${direct_info_page%/}.README.md to the website: ${direct_info_page%/}/README.md"
+    fi
+} | align_right_continuations
 
 if [[ "$additional_actions" == *"[install]"* ]] ; then
     echo ""
@@ -274,6 +294,25 @@ if [[ "$additional_actions" == *"[install]"* ]] ; then
 fi
 }
 
+function align_right_continuations() {
+    local max_line_length=0
+    local lines=()
+
+    while IFS= read -r line; do
+        lines+=("$line")
+        local line_length=${#line}
+        if [[ $line_length -gt $max_line_length ]]; then
+            max_line_length=$line_length
+        fi
+    done
+
+    for line in "${lines[@]}"; do
+        continuation_marker=" \\"  # The continuation mark
+        main_line="${line%"$continuation_marker"}"  # Get the part before the continuation mark
+        [[ "$main_line" == "$line" ]] && continuation_marker=""  # If no continuation mark, set it to empty
+        printf "%-${max_line_length}s%s\n" "$main_line" "$continuation_marker"
+    done
+}
 function _inner_do_var_replacement_lines() {
     local needle="$1"
     local replacement="$2"
