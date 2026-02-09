@@ -42,5 +42,6 @@ The 'do-build-deb-package.sh' script will also give instructions on how to insta
 
 ## Future Roadmap ##
 
-Adding tests
-Collect other tools and include
+* Adding tests
+* Collect other tools
+* Permit marking a 'pre-release' or 'draft'

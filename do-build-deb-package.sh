@@ -252,8 +252,8 @@ function main()
             print_lines "${readme_firstSectionSubsections[@]}"
             echo ""
             echo "# More information #"
-            echo " * Source code is available at **[<git_url_prefix_url-sans_https>(<git_url_prefix_url>)**"
-            echo " * Release history is available at **[<git_releases_all_url-sans_https>](<git_releases_all_url>)**"
+            echo " * Source code is available at **<git_url_prefix_url-link-md>**"
+            echo " * Release history is available at **<git_releases_all_url-link-md>**"
         } | do_var_replacements > "${out_dist_dir%/}/${direct_info_page%/}.README.md"
     fi
 
@@ -383,6 +383,7 @@ function do_var_replacements(){
     local _tmpfile ; _tmpfile="$(mktemp)"
     cat > "$_tmpfile"
     for name in "${!replacements[@]}"; do
+        [[ "$name" == *_url ]] && _inner_do_var_replacement_file "<${name}-link-md>" "[<${name}-sans_https>](<${name}>)" "$_tmpfile"
         _inner_do_var_replacement_file "<${name}>" "${replacements[$name]}" "$_tmpfile"
         [[ "$name" == *_url ]] && _inner_do_var_replacement_file "<${name}-sans_https>" "${replacements[$name]#https://}" "$_tmpfile"
     done
