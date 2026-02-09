@@ -22,8 +22,6 @@ It is the 'Finnish Mythology' usage that this archive is named after.
 
 # Development Notes #
 
-Note: These 'development notes' at the end are not included in the 'readme.md' that is installed.
-
 ## Coding styles ##
 
 These are provided in the `.pre-commit-config.yaml`
